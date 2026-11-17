@@ -1,0 +1,64 @@
+{
+  "id": "crm-03",
+  "name": "Relatório semanal",
+  "active": true,
+  "isArchived": false,
+  "versionId": "b1f0c7a2-0003-4000-8000-000000000002",
+  "activeVersionId": "b1f0c7a2-0003-4000-8000-000000000001",
+  "updatedAt": "2026-11-12T14:30:00.000Z",
+  "tags": [{ "id": "t-crm", "name": "crm-exemplo" }],
+  "settings": { "executionOrder": "v1", "errorWorkflow": "crm-09" },
+  "nodes": [
+    {
+      "id": "6f1c0003-0000-4000-8000-000000000001",
+      "name": "Toda segunda",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "weeks", "triggerAtDay": [1], "triggerAtHour": 8 }] } }
+    },
+    {
+      "id": "6f1c0003-0000-4000-8000-000000000002",
+      "name": "Contar envios",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=select public.relatorio_envios('{{ $json.tenant_id }}'::uuid, current_date - 7, current_date) as total"
+      },
+      "credentials": { "postgres": { "id": "cred-crm-pg", "name": "CRM · Postgres (app_n8n)" } }
+    }
+  ],
+  "connections": {
+    "Toda segunda": { "main": [[{ "node": "Contar envios", "type": "main", "index": 0 }]] }
+  },
+  "activeVersion": {
+    "versionId": "b1f0c7a2-0003-4000-8000-000000000001",
+    "nodes": [
+      {
+        "id": "6f1c0003-0000-4000-8000-000000000001",
+        "name": "Toda segunda",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [0, 0],
+        "parameters": { "rule": { "interval": [{ "field": "weeks", "triggerAtDay": [1], "triggerAtHour": 8 }] } }
+      },
+      {
+        "id": "6f1c0003-0000-4000-8000-000000000002",
+        "name": "Contar envios",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [220, 0],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "=select total from public.metricas_semanais where tenant_id = '{{ $json.tenant_id }}' and semana = date_trunc('week', current_date)"
+        },
+        "credentials": { "postgres": { "id": "cred-crm-pg", "name": "CRM · Postgres (app_n8n)" } }
+      }
+    ],
+    "connections": {
+      "Toda segunda": { "main": [[{ "node": "Contar envios", "type": "main", "index": 0 }]] }
+    }
+  }
+}

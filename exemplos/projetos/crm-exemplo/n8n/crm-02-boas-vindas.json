@@ -1,0 +1,44 @@
+{
+  "id": "crm-02",
+  "name": "Boas-vindas de contato",
+  "active": true,
+  "isArchived": false,
+  "versionId": "b1f0c7a2-0002-4000-8000-000000000001",
+  "activeVersionId": "b1f0c7a2-0002-4000-8000-000000000001",
+  "updatedAt": "2026-09-15T10:20:00.000Z",
+  "tags": [{ "id": "t-crm", "name": "crm-exemplo" }],
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "6f1c0002-0000-4000-8000-000000000001",
+      "name": "Contato criado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "parameters": { "httpMethod": "POST", "path": "crm/contato-criado" }
+    },
+    {
+      "id": "6f1c0002-0000-4000-8000-000000000002",
+      "name": "Gravar mensagem de boas-vindas",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [220, 0],
+      "parameters": {
+        "operation": "create",
+        "tableId": "envios",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "tenant_id", "fieldValue": "={{ $json.body.tenant_id }}" },
+            { "fieldId": "contato_id", "fieldValue": "={{ $json.body.id }}" },
+            { "fieldId": "canal", "fieldValue": "email" },
+            { "fieldId": "conteudo", "fieldValue": "Bem-vindo!" }
+          ]
+        }
+      },
+      "credentials": { "supabaseApi": { "id": "cred-agencia-sb", "name": "Supabase da agência (outro projeto)" } }
+    }
+  ],
+  "connections": {
+    "Contato criado": { "main": [[{ "node": "Gravar mensagem de boas-vindas", "type": "main", "index": 0 }]] }
+  }
+}

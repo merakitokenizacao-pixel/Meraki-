@@ -1,0 +1,9 @@
+{
+  "name": "crm-exemplo-painel",
+  "private": true,
+  "description": "Painel do CRM de exemplo. Só existe para o coletor de repositório do Meraki ler; não é instalado nem executado.",
+  "dependencies": {
+    "@supabase/supabase-js": "2.49.4",
+    "next": "16.0.3"
+  }
+}

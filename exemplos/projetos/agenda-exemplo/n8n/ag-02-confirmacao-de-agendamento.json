@@ -1,0 +1,36 @@
+{
+  "id": "ag-02",
+  "name": "Confirmação de agendamento",
+  "active": true,
+  "isArchived": false,
+  "versionId": "c2a1d3b4-0002-4000-8000-000000000001",
+  "activeVersionId": "c2a1d3b4-0002-4000-8000-000000000001",
+  "updatedAt": "2026-10-20T11:10:00.000Z",
+  "tags": [{ "id": "t-agenda", "name": "agenda-exemplo" }],
+  "settings": { "executionOrder": "v1", "errorWorkflow": "ag-09" },
+  "nodes": [
+    {
+      "id": "7a2b0002-0000-4000-8000-000000000001",
+      "name": "Pedido de agendamento",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "parameters": { "httpMethod": "POST", "path": "agenda/novo" }
+    },
+    {
+      "id": "7a2b0002-0000-4000-8000-000000000002",
+      "name": "Agendar",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=select public.agendar({{ $json.body.profissional }}, {{ $json.body.cliente }}, '{{ $json.body.inicio }}'::timestamptz, interval '40 minutes') as id"
+      },
+      "credentials": { "postgres": { "id": "cred-agenda-pg", "name": "Agenda · Postgres (app_n8n)" } }
+    }
+  ],
+  "connections": {
+    "Pedido de agendamento": { "main": [[{ "node": "Agendar", "type": "main", "index": 0 }]] }
+  }
+}

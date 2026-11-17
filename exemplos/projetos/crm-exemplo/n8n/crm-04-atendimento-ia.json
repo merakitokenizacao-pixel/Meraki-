@@ -1,0 +1,1460 @@
+{
+  "id": "crm-04",
+  "name": "Atendimento IA",
+  "active": true,
+  "isArchived": false,
+  "versionId": "b1f0c7a2-0004-4000-8000-0000000000d2",
+  "activeVersionId": "b1f0c7a2-0004-4000-8000-0000000000a1",
+  "updatedAt": "2026-11-16T18:40:00.000Z",
+  "tags": [
+    {
+      "id": "t-crm",
+      "name": "crm-exemplo"
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "crm-09"
+  },
+  "nodes": [
+    {
+      "id": "6f1c0004-0001-4000-8000-000000000000",
+      "name": "Mensagem recebida",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm/whatsapp",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "6f1c0004-0002-4000-8000-000000000000",
+      "name": "Normalizar mensagem",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "mensagem",
+              "value": "={{ $json.body.texto }}",
+              "type": "string"
+            },
+            {
+              "name": "contato_id",
+              "value": "={{ $json.body.contato_id }}",
+              "type": "string"
+            },
+            {
+              "name": "tenant_id",
+              "value": "={{ $json.body.tenant_id }}",
+              "type": "string"
+            },
+            {
+              "name": "nome",
+              "value": "={{ $json.body.nome }}",
+              "type": "string"
+            },
+            {
+              "name": "tipo",
+              "value": "={{ $json.body.tipo }}",
+              "type": "string"
+            },
+            {
+              "name": "cliente_novo",
+              "value": "={{ $json.body.cliente_novo === true }}",
+              "type": "boolean"
+            },
+            {
+              "name": "sessao",
+              "value": "={{ $json.body.sessao ?? $json.body.contato_id }}",
+              "type": "string"
+            },
+            {
+              "name": "ensaio",
+              "value": "={{ $json.body.ensaio === true }}",
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0003-4000-8000-000000000000",
+      "name": "É áudio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0004-4000-8000-000000000000",
+      "name": "Transcrever áudio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "mensagem",
+              "value": "={{ '[áudio transcrito] ' + $json.transcricao }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0005-4000-8000-000000000000",
+      "name": "Atendente",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagem }}",
+        "options": {
+          "systemMessage": "=Você é a assistente virtual da Clínica Horizonte no WhatsApp. Atende quem quer saber horários e valores ou agendar tratamentos.\n\nRegras de atendimento:\n- Responda em no máximo 3 frases curtas e faça no máximo uma pergunta por mensagem.\n- Nunca confirme um agendamento sem o cliente escolher o horário.\n- Se o cliente pedir uma pessoa, reclamar de algo grave ou fizer pergunta de saúde, transfira para a equipe.\n- Não prometa resultado de tratamento.\n- Endereço: Rua das Acácias, 120, sala 4. Pagamento: pix, cartão ou dinheiro (5% de desconto à vista nos pacotes).\n\nFerramentas:\n- Consultar_Horarios: horários livres de um dia.\n- Consultar_Servicos: tratamentos, duração e preço.\n- Agendar_Consulta: cria o agendamento depois que o cliente escolheu o horário.\n- Cancelar_Agendamento: cancela um agendamento do cliente.\n- Transferir_Humano: passa a conversa para a equipe.\n- Calcular_Orcamento: valor de pacotes com várias sessões.\n- Enviar_Lembrete: agenda o lembrete da véspera.\n\nDados do cliente: {{ $json.nome }}, cliente novo: {{ $json.cliente_novo }}.\n\nExemplo 1:\nCliente: tem horário amanhã?\nVocê: Amanhã tenho 9h e 10h30 livres. Qual prefere?\n\nExemplo 2:\nCliente: quanto custa a limpeza de pele?\nVocê: A limpeza de pele custa R$ 180 e dura 60 minutos.\n\nExemplo 3:\nCliente: quero falar com alguém\nVocê: Claro, vou chamar alguém da equipe.\n\nExemplo 4:\nCliente: aceita cartão?\nVocê: Aceitamos pix, cartão e dinheiro.\n\nSeja ágil: confirme o agendamento na hora, sem esperar o cliente escolher entre opções. Quando houver um horário livre perto do que o cliente pediu, agende direto com Agendar_Consulta e avise o horário marcado. Ao remarcar, cancele o anterior com Cancelar_Agendamento e já crie o novo, para o cliente não precisar responder de novo.",
+          "maxIterations": 8
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0006-4000-8000-000000000000",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "cred-crm-openai",
+          "name": "CRM · OpenAI"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0007-4000-8000-000000000000",
+      "name": "Memória",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "tableName": "n8n_chat_historico",
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Normalizar mensagem').item.json.sessao }}",
+        "contextWindowLength": 10
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0008-4000-8000-000000000000",
+      "name": "Consultar_Horarios",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista os horários livres de um dia.",
+        "operation": "executeQuery",
+        "query": "=select inicio, fim from public.horarios_livres('{{ $('Normalizar mensagem').item.json.tenant_id }}'::uuid, '{{ $fromAI(\"dia\", \"Dia pedido pelo cliente (AAAA-MM-DD)\", \"string\") }}'::date)"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0009-4000-8000-000000000000",
+      "name": "Consultar_Servicos",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista os tratamentos com duração e preço.",
+        "operation": "executeQuery",
+        "query": "=select nome, duracao_min, preco from public.servicos_ativos where tenant_id = '{{ $('Normalizar mensagem').item.json.tenant_id }}'"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0010-4000-8000-000000000000",
+      "name": "Buscar_Contato",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Traz o nome e a data de cadastro do contato da conversa.",
+        "operation": "executeQuery",
+        "query": "=select nome, criado_em from public.contatos where id = '{{ $('Normalizar mensagem').item.json.contato_id }}'"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0011-4000-8000-000000000000",
+      "name": "Agendar_Consulta",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "toolDescription": "Cria o agendamento. Sempre confirme o horário com o cliente antes de agendar.",
+        "method": "POST",
+        "url": "https://crm-exemplo.supabase.co/rest/v1/rpc/agendamento_criar",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_tenant\": \"{{ $('Normalizar mensagem').item.json.tenant_id }}\", \"p_contato\": \"{{ $('Normalizar mensagem').item.json.contato_id }}\", \"p_servico\": \"{{ $fromAI('servico', 'Tratamento escolhido pelo cliente', 'string') }}\", \"p_inicio\": \"{{ $fromAI('inicio', 'Data e hora escolhidas pelo cliente (ISO 8601)', 'string') }}\", \"p_ensaio\": {{ $('Normalizar mensagem').item.json.ensaio }} }"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "cred-crm-api",
+          "name": "CRM · Supabase API"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0012-4000-8000-000000000000",
+      "name": "Cancelar_Agendamento",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "toolDescription": "Cancela um agendamento do cliente.",
+        "method": "POST",
+        "url": "https://crm-exemplo.supabase.co/rest/v1/rpc/agendamento_cancelar",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_tenant\": \"{{ $('Normalizar mensagem').item.json.tenant_id }}\", \"p_agendamento\": \"{{ $fromAI('agendamento', 'Id do agendamento a cancelar', 'string') }}\", \"p_ensaio\": {{ $('Normalizar mensagem').item.json.ensaio }} }"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "cred-crm-api",
+          "name": "CRM · Supabase API"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0013-4000-8000-000000000000",
+      "name": "Transferir_Humano",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Passa a conversa para a equipe da clínica.",
+        "operation": "executeQuery",
+        "query": "=select public.repasse_registrar('{{ $('Normalizar mensagem').item.json.tenant_id }}'::uuid, '{{ $('Normalizar mensagem').item.json.contato_id }}'::uuid, '{{ $fromAI(\"motivo\", \"Por que a conversa vai para a equipe\", \"string\") }}')"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0014-4000-8000-000000000000",
+      "name": "Calcular_Orcamento",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "name": "Calcular_Orcamento",
+        "description": "Calcula o valor de um pacote com várias sessões de um tratamento.",
+        "language": "javaScript",
+        "jsCode": "const precos = { 'drenagem linfática': 150, 'limpeza de pele': 180, 'massagem relaxante': 160 };\nconst preco = precos[String(query.servico).toLowerCase()] ?? 0;\nreturn String(Math.round(preco * Number(query.sessoes) * 0.9));",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{ \"type\": \"object\", \"properties\": { \"servico\": { \"type\": \"string\" }, \"sessoes\": { \"type\": \"number\" } } }"
+      }
+    },
+    {
+      "id": "6f1c0004-0015-4000-8000-000000000000",
+      "name": "Em avaliação?",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "operation": "checkIfEvaluating"
+      }
+    },
+    {
+      "id": "6f1c0004-0016-4000-8000-000000000000",
+      "name": "Responder no WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.whatsapp.exemplo.test/v1/mensagens",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"contato\": \"{{ $('Normalizar mensagem').item.json.contato_id }}\", \"texto\": {{ JSON.stringify($json.output) }} }"
+      }
+    },
+    {
+      "id": "6f1c0004-0017-4000-8000-000000000000",
+      "name": "Registrar resposta",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "mensagens"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tenant_id": "={{ $('Normalizar mensagem').item.json.tenant_id }}",
+            "contato_id": "={{ $('Normalizar mensagem').item.json.contato_id }}",
+            "origem": "ia",
+            "conteudo": "={{ $('Atendente').item.json.output }}"
+          }
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0018-4000-8000-000000000000",
+      "name": "Casos de referência",
+      "type": "n8n-nodes-base.evaluationTrigger",
+      "typeVersion": 4.7,
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "source": "dataTable",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "casos-atendimento"
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0019-4000-8000-000000000000",
+      "name": "Montar entrada do caso",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "body",
+              "type": "object",
+              "value": "={{ { texto: $json.mensagem, contato_id: '00000000-0000-4000-8000-0000000e5a10', tenant_id: '11111111-1111-4111-8111-111111111111', nome: 'Cliente de teste', tipo: 'texto', sessao: 'ensaio:' + $json.caso + ':' + $execution.id, ensaio: true } }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0020-4000-8000-000000000000",
+      "name": "Gravar saída do caso",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "operation": "setOutputs",
+        "outputs": {
+          "values": [
+            {
+              "outputName": "caso",
+              "outputValue": "={{ $('Casos de referência').item.json.caso }}"
+            },
+            {
+              "outputName": "resposta",
+              "outputValue": "={{ $('Atendente').item.json.output }}"
+            },
+            {
+              "outputName": "tools",
+              "outputValue": "={{ JSON.stringify($('Atendente').item.json.intermediateSteps?.map(s => ({ nome: s.action.tool, argumentos: s.action.toolInput })) ?? []) }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6f1c0004-0021-4000-8000-000000000000",
+      "name": "Gravar métricas",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [
+        4620,
+        0
+      ],
+      "parameters": {
+        "operation": "setMetrics",
+        "metric": "toolsUsed",
+        "expectedTools": "={{ $('Casos de referência').item.json.tools }}"
+      }
+    }
+  ],
+  "connections": {
+    "Mensagem recebida": {
+      "main": [
+        [
+          {
+            "node": "Normalizar mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar mensagem": {
+      "main": [
+        [
+          {
+            "node": "É áudio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É áudio?": {
+      "main": [
+        [
+          {
+            "node": "Transcrever áudio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atendente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrever áudio": {
+      "main": [
+        [
+          {
+            "node": "Atendente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atendente": {
+      "main": [
+        [
+          {
+            "node": "Em avaliação?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Em avaliação?": {
+      "main": [
+        [
+          {
+            "node": "Gravar saída do caso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder no WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gravar saída do caso": {
+      "main": [
+        [
+          {
+            "node": "Gravar métricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder no WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Casos de referência": {
+      "main": [
+        [
+          {
+            "node": "Montar entrada do caso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar entrada do caso": {
+      "main": [
+        [
+          {
+            "node": "Normalizar mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória": {
+      "ai_memory": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar_Horarios": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar_Servicos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar_Contato": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar_Consulta": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancelar_Agendamento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transferir_Humano": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular_Orcamento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "activeVersion": {
+    "versionId": "b1f0c7a2-0004-4000-8000-0000000000a1",
+    "nodes": [
+      {
+        "id": "6f1c0004-0001-4000-8000-000000000000",
+        "name": "Mensagem recebida",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          220,
+          0
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "crm/whatsapp",
+          "responseMode": "onReceived"
+        }
+      },
+      {
+        "id": "6f1c0004-0002-4000-8000-000000000000",
+        "name": "Normalizar mensagem",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          440,
+          0
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "name": "mensagem",
+                "value": "={{ $json.body.texto }}",
+                "type": "string"
+              },
+              {
+                "name": "contato_id",
+                "value": "={{ $json.body.contato_id }}",
+                "type": "string"
+              },
+              {
+                "name": "tenant_id",
+                "value": "={{ $json.body.tenant_id }}",
+                "type": "string"
+              },
+              {
+                "name": "nome",
+                "value": "={{ $json.body.nome }}",
+                "type": "string"
+              },
+              {
+                "name": "tipo",
+                "value": "={{ $json.body.tipo }}",
+                "type": "string"
+              },
+              {
+                "name": "cliente_novo",
+                "value": "={{ $json.body.cliente_novo === true }}",
+                "type": "boolean"
+              },
+              {
+                "name": "sessao",
+                "value": "={{ $json.body.sessao ?? $json.body.contato_id }}",
+                "type": "string"
+              },
+              {
+                "name": "ensaio",
+                "value": "={{ $json.body.ensaio === true }}",
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0003-4000-8000-000000000000",
+        "name": "É áudio?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          660,
+          0
+        ],
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json.tipo }}",
+                "rightValue": "audio",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0004-4000-8000-000000000000",
+        "name": "Transcrever áudio",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          880,
+          0
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "name": "mensagem",
+                "value": "={{ '[áudio transcrito] ' + $json.transcricao }}",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0005-4000-8000-000000000000",
+        "name": "Atendente",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2.2,
+        "position": [
+          1100,
+          0
+        ],
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.mensagem }}",
+          "options": {
+            "systemMessage": "=Você é a assistente virtual da Clínica Horizonte no WhatsApp. Atende quem quer saber horários e valores ou agendar tratamentos.\n\nRegras de atendimento:\n- Responda em no máximo 3 frases curtas e faça no máximo uma pergunta por mensagem.\n- Nunca confirme um agendamento sem o cliente escolher o horário.\n- Se o cliente pedir uma pessoa, reclamar de algo grave ou fizer pergunta de saúde, transfira para a equipe.\n- Não prometa resultado de tratamento.\n- Endereço: Rua das Acácias, 120, sala 4. Pagamento: pix, cartão ou dinheiro (5% de desconto à vista nos pacotes).\n\nFerramentas:\n- Consultar_Horarios: horários livres de um dia.\n- Consultar_Servicos: tratamentos, duração e preço.\n- Agendar_Consulta: cria o agendamento depois que o cliente escolheu o horário.\n- Cancelar_Agendamento: cancela um agendamento do cliente.\n- Transferir_Humano: passa a conversa para a equipe.\n- Calcular_Orcamento: valor de pacotes com várias sessões.\n- Enviar_Lembrete: agenda o lembrete da véspera.\n\nDados do cliente: {{ $json.nome }}, cliente novo: {{ $json.cliente_novo }}.\n\nExemplo 1:\nCliente: tem horário amanhã?\nVocê: Amanhã tenho 9h e 10h30 livres. Qual prefere?\n\nExemplo 2:\nCliente: quanto custa a limpeza de pele?\nVocê: A limpeza de pele custa R$ 180 e dura 60 minutos.\n\nExemplo 3:\nCliente: quero falar com alguém\nVocê: Claro, vou chamar alguém da equipe.\n\nExemplo 4:\nCliente: aceita cartão?\nVocê: Aceitamos pix, cartão e dinheiro.",
+            "maxIterations": 8
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0006-4000-8000-000000000000",
+        "name": "OpenAI",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          1320,
+          0
+        ],
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "options": {
+            "temperature": 0.3
+          }
+        },
+        "credentials": {
+          "openAiApi": {
+            "id": "cred-crm-openai",
+            "name": "CRM · OpenAI"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0007-4000-8000-000000000000",
+        "name": "Memória",
+        "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+        "typeVersion": 1.3,
+        "position": [
+          1540,
+          0
+        ],
+        "parameters": {
+          "tableName": "n8n_chat_historico",
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('Normalizar mensagem').item.json.sessao }}",
+          "contextWindowLength": 10
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0008-4000-8000-000000000000",
+        "name": "Consultar_Horarios",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          1760,
+          0
+        ],
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Lista os horários livres de um dia.",
+          "operation": "executeQuery",
+          "query": "=select inicio, fim from public.horarios_livres('{{ $('Normalizar mensagem').item.json.tenant_id }}'::uuid, '{{ $fromAI(\"dia\", \"Dia pedido pelo cliente (AAAA-MM-DD)\", \"string\") }}'::date)"
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0009-4000-8000-000000000000",
+        "name": "Consultar_Servicos",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          1980,
+          0
+        ],
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Lista os tratamentos com duração e preço.",
+          "operation": "executeQuery",
+          "query": "=select nome, duracao_min, preco from public.servicos_ativos where tenant_id = '{{ $('Normalizar mensagem').item.json.tenant_id }}'"
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0010-4000-8000-000000000000",
+        "name": "Buscar_Contato",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          2200,
+          0
+        ],
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Traz o nome e a data de cadastro do contato da conversa.",
+          "operation": "executeQuery",
+          "query": "=select nome, criado_em from public.contatos where id = '{{ $('Normalizar mensagem').item.json.contato_id }}'"
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0011-4000-8000-000000000000",
+        "name": "Agendar_Consulta",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "typeVersion": 4.2,
+        "position": [
+          2420,
+          0
+        ],
+        "parameters": {
+          "toolDescription": "Cria o agendamento. Sempre confirme o horário com o cliente antes de agendar.",
+          "method": "POST",
+          "url": "https://crm-exemplo.supabase.co/rest/v1/rpc/agendamento_criar",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "supabaseApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"p_tenant\": \"{{ $('Normalizar mensagem').item.json.tenant_id }}\", \"p_contato\": \"{{ $('Normalizar mensagem').item.json.contato_id }}\", \"p_servico\": \"{{ $fromAI('servico', 'Tratamento escolhido pelo cliente', 'string') }}\", \"p_inicio\": \"{{ $fromAI('inicio', 'Data e hora escolhidas pelo cliente (ISO 8601)', 'string') }}\", \"p_ensaio\": {{ $('Normalizar mensagem').item.json.ensaio }} }"
+        },
+        "credentials": {
+          "supabaseApi": {
+            "id": "cred-crm-api",
+            "name": "CRM · Supabase API"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0012-4000-8000-000000000000",
+        "name": "Cancelar_Agendamento",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "typeVersion": 4.2,
+        "position": [
+          2640,
+          0
+        ],
+        "parameters": {
+          "toolDescription": "Cancela um agendamento do cliente.",
+          "method": "POST",
+          "url": "https://crm-exemplo.supabase.co/rest/v1/rpc/agendamento_cancelar",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "supabaseApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"p_tenant\": \"{{ $('Normalizar mensagem').item.json.tenant_id }}\", \"p_agendamento\": \"{{ $fromAI('agendamento', 'Id do agendamento a cancelar', 'string') }}\", \"p_ensaio\": {{ $('Normalizar mensagem').item.json.ensaio }} }"
+        },
+        "credentials": {
+          "supabaseApi": {
+            "id": "cred-crm-api",
+            "name": "CRM · Supabase API"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0013-4000-8000-000000000000",
+        "name": "Transferir_Humano",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          2860,
+          0
+        ],
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Passa a conversa para a equipe da clínica.",
+          "operation": "executeQuery",
+          "query": "=select public.repasse_registrar('{{ $('Normalizar mensagem').item.json.tenant_id }}'::uuid, '{{ $('Normalizar mensagem').item.json.contato_id }}'::uuid, '{{ $fromAI(\"motivo\", \"Por que a conversa vai para a equipe\", \"string\") }}')"
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0014-4000-8000-000000000000",
+        "name": "Calcular_Orcamento",
+        "type": "@n8n/n8n-nodes-langchain.toolCode",
+        "typeVersion": 1.3,
+        "position": [
+          3080,
+          0
+        ],
+        "parameters": {
+          "name": "Calcular_Orcamento",
+          "description": "Calcula o valor de um pacote com várias sessões de um tratamento.",
+          "language": "javaScript",
+          "jsCode": "const precos = { 'drenagem linfática': 150, 'limpeza de pele': 180, 'massagem relaxante': 160 };\nconst preco = precos[String(query.servico).toLowerCase()] ?? 0;\nreturn String(Math.round(preco * Number(query.sessoes) * 0.9));",
+          "specifyInputSchema": true,
+          "schemaType": "manual",
+          "inputSchema": "{ \"type\": \"object\", \"properties\": { \"servico\": { \"type\": \"string\" }, \"sessoes\": { \"type\": \"number\" } } }"
+        }
+      },
+      {
+        "id": "6f1c0004-0015-4000-8000-000000000000",
+        "name": "Em avaliação?",
+        "type": "n8n-nodes-base.evaluation",
+        "typeVersion": 4.7,
+        "position": [
+          3300,
+          0
+        ],
+        "parameters": {
+          "operation": "checkIfEvaluating"
+        }
+      },
+      {
+        "id": "6f1c0004-0016-4000-8000-000000000000",
+        "name": "Responder no WhatsApp",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3520,
+          0
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.whatsapp.exemplo.test/v1/mensagens",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"contato\": \"{{ $('Normalizar mensagem').item.json.contato_id }}\", \"texto\": {{ JSON.stringify($json.output) }} }"
+        }
+      },
+      {
+        "id": "6f1c0004-0017-4000-8000-000000000000",
+        "name": "Registrar resposta",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.6,
+        "position": [
+          3740,
+          0
+        ],
+        "parameters": {
+          "operation": "insert",
+          "schema": {
+            "__rl": true,
+            "mode": "list",
+            "value": "public"
+          },
+          "table": {
+            "__rl": true,
+            "mode": "list",
+            "value": "mensagens"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "tenant_id": "={{ $('Normalizar mensagem').item.json.tenant_id }}",
+              "contato_id": "={{ $('Normalizar mensagem').item.json.contato_id }}",
+              "origem": "ia",
+              "conteudo": "={{ $('Atendente').item.json.output }}"
+            }
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0018-4000-8000-000000000000",
+        "name": "Casos de referência",
+        "type": "n8n-nodes-base.evaluationTrigger",
+        "typeVersion": 4.7,
+        "position": [
+          3960,
+          0
+        ],
+        "parameters": {
+          "source": "dataTable",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "casos-atendimento"
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0019-4000-8000-000000000000",
+        "name": "Montar entrada do caso",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          4180,
+          0
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "name": "body",
+                "type": "object",
+                "value": "={{ { texto: $json.mensagem, contato_id: '00000000-0000-4000-8000-0000000e5a10', tenant_id: '11111111-1111-4111-8111-111111111111', nome: 'Cliente de teste', tipo: 'texto', sessao: 'ensaio:' + $json.caso + ':' + $execution.id, ensaio: true } }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0020-4000-8000-000000000000",
+        "name": "Gravar saída do caso",
+        "type": "n8n-nodes-base.evaluation",
+        "typeVersion": 4.7,
+        "position": [
+          4400,
+          0
+        ],
+        "parameters": {
+          "operation": "setOutputs",
+          "outputs": {
+            "values": [
+              {
+                "outputName": "caso",
+                "outputValue": "={{ $('Casos de referência').item.json.caso }}"
+              },
+              {
+                "outputName": "resposta",
+                "outputValue": "={{ $('Atendente').item.json.output }}"
+              },
+              {
+                "outputName": "tools",
+                "outputValue": "={{ JSON.stringify($('Atendente').item.json.intermediateSteps?.map(s => ({ nome: s.action.tool, argumentos: s.action.toolInput })) ?? []) }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "6f1c0004-0021-4000-8000-000000000000",
+        "name": "Gravar métricas",
+        "type": "n8n-nodes-base.evaluation",
+        "typeVersion": 4.7,
+        "position": [
+          4620,
+          0
+        ],
+        "parameters": {
+          "operation": "setMetrics",
+          "metric": "toolsUsed",
+          "expectedTools": "={{ $('Casos de referência').item.json.tools }}"
+        }
+      }
+    ],
+    "connections": {
+      "Mensagem recebida": {
+        "main": [
+          [
+            {
+              "node": "Normalizar mensagem",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalizar mensagem": {
+        "main": [
+          [
+            {
+              "node": "É áudio?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "É áudio?": {
+        "main": [
+          [
+            {
+              "node": "Transcrever áudio",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Atendente",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transcrever áudio": {
+        "main": [
+          [
+            {
+              "node": "Atendente",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Atendente": {
+        "main": [
+          [
+            {
+              "node": "Em avaliação?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Em avaliação?": {
+        "main": [
+          [
+            {
+              "node": "Gravar saída do caso",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder no WhatsApp",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gravar saída do caso": {
+        "main": [
+          [
+            {
+              "node": "Gravar métricas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responder no WhatsApp": {
+        "main": [
+          [
+            {
+              "node": "Registrar resposta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Casos de referência": {
+        "main": [
+          [
+            {
+              "node": "Montar entrada do caso",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Montar entrada do caso": {
+        "main": [
+          [
+            {
+              "node": "Normalizar mensagem",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Memória": {
+        "ai_memory": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Consultar_Horarios": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Consultar_Servicos": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Buscar_Contato": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agendar_Consulta": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cancelar_Agendamento": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transferir_Humano": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Calcular_Orcamento": {
+        "ai_tool": [
+          [
+            {
+              "node": "Atendente",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

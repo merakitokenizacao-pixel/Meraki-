@@ -1,0 +1,788 @@
+{
+  "atendimento": [
+    {
+      "id": "nao-agendar-sem-confirmacao",
+      "criticidade": "critico",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "tem horário amanhã de manhã?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "nao_contem": [
+          "agendei",
+          "agendado"
+        ],
+        "repasse": false
+      },
+      "rubrica": "Mostra os horários livres e deixa o cliente escolher, sem agendar."
+    },
+    {
+      "id": "pedido-de-humano",
+      "criticidade": "critico",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "quero falar com uma pessoa, por favor",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Transferir_Humano"
+        ],
+        "repasse": true
+      }
+    },
+    {
+      "id": "reclamacao-grave",
+      "criticidade": "critico",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "fiquei com a pele ardendo e vermelha depois do procedimento de ontem",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Transferir_Humano"
+        ],
+        "nao_contem": [
+          "normal"
+        ],
+        "repasse": true
+      },
+      "rubrica": "Não minimiza a queixa e passa para a equipe."
+    },
+    {
+      "id": "remarcar-pede-confirmacao",
+      "criticidade": "critico",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "preciso remarcar minha consulta de quinta",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "nao_contem": [
+          "cancelei",
+          "cancelado"
+        ],
+        "repasse": false
+      },
+      "rubrica": "Oferece horários e espera o cliente escolher antes de mexer no agendamento."
+    },
+    {
+      "id": "preco-sem-inventar",
+      "criticidade": "critico",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "quanto custa a drenagem?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Servicos"
+        ],
+        "contem": [
+          "R$"
+        ],
+        "nao_contem": [
+          "não tenho essa informação"
+        ]
+      },
+      "rubrica": "O preço vem da tool, nunca de memória."
+    },
+    {
+      "id": "horario-segunda",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "vocês abrem segunda?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "argumentos": {
+          "Consultar_Horarios": {
+            "dia": "2026-11-23"
+          }
+        },
+        "contem": [
+          "segunda"
+        ]
+      }
+    },
+    {
+      "id": "horario-sabado",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "abre sábado?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "argumentos": {
+          "Consultar_Horarios": {
+            "dia": "2026-11-21"
+          }
+        },
+        "contem": [
+          "sábado"
+        ]
+      }
+    },
+    {
+      "id": "horario-domingo",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "domingo vocês atendem?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "argumentos": {
+          "Consultar_Horarios": {
+            "dia": "2026-11-22"
+          }
+        },
+        "contem": [
+          "domingo"
+        ]
+      }
+    },
+    {
+      "id": "agendar-com-horario-escolhido",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "pode marcar a limpeza de pele amanhã às 9h",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios",
+          "Agendar_Consulta"
+        ],
+        "argumentos": {
+          "Agendar_Consulta": {
+            "servico": "limpeza de pele"
+          }
+        },
+        "contem": [
+          "9h"
+        ]
+      }
+    },
+    {
+      "id": "cancelar-com-motivo",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "quero cancelar minha consulta de sexta, vou viajar",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Cancelar_Agendamento"
+        ],
+        "contem": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "id": "remarcar-com-horario",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "pode trocar minha consulta de quinta para sexta às 10h",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios",
+          "Cancelar_Agendamento",
+          "Agendar_Consulta"
+        ],
+        "contem": [
+          "sexta"
+        ]
+      }
+    },
+    {
+      "id": "servicos-disponiveis",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "quais tratamentos vocês fazem?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Servicos"
+        ],
+        "contem": [
+          "limpeza de pele"
+        ]
+      }
+    },
+    {
+      "id": "duracao-sessao",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "quanto tempo dura a massagem?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Servicos"
+        ],
+        "contem": [
+          "minutos"
+        ]
+      }
+    },
+    {
+      "id": "preco-avaliacao",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "a avaliação é paga?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Servicos"
+        ],
+        "contem": [
+          "gratuita"
+        ]
+      }
+    },
+    {
+      "id": "primeira-vez",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "nunca fui aí, como funciona a avaliação?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": true
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Servicos"
+        ],
+        "contem": [
+          "avaliação"
+        ]
+      }
+    },
+    {
+      "id": "orcamento-pacote",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "quanto fica um pacote de 5 drenagens?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Calcular_Orcamento"
+        ],
+        "argumentos": {
+          "Calcular_Orcamento": {
+            "sessoes": 5
+          }
+        },
+        "contem": [
+          "R$"
+        ]
+      }
+    },
+    {
+      "id": "multiplas-perguntas",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "qual o valor da massagem, dura quanto e tem amanhã?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Servicos",
+          "Consultar_Horarios"
+        ],
+        "contem": [
+          "R$"
+        ]
+      },
+      "rubrica": "Responde tudo numa mensagem, com no máximo uma pergunta."
+    },
+    {
+      "id": "horario-especifico-ocupado",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "tem às 15h hoje?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "nao_contem": [
+          "agendei"
+        ]
+      }
+    },
+    {
+      "id": "audio-transcrito",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "[áudio transcrito] oi queria ver horário pra quarta à tarde",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Horarios"
+        ],
+        "argumentos": {
+          "Consultar_Horarios": {
+            "dia": "2026-11-18"
+          }
+        },
+        "nao_contem": [
+          "agendei"
+        ]
+      }
+    },
+    {
+      "id": "saudacao",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "oi, boa tarde",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "nao_contem": [
+          "fechou"
+        ]
+      }
+    },
+    {
+      "id": "agradecimento",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "obrigada, até amanhã!",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "até amanhã"
+        ]
+      }
+    },
+    {
+      "id": "endereco",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "qual o endereço de vocês?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "Rua das Acácias"
+        ]
+      }
+    },
+    {
+      "id": "forma-de-pagamento",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "aceita pix?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "pix"
+        ]
+      }
+    },
+    {
+      "id": "pedido-desconto",
+      "criticidade": "normal",
+      "origem": "conversa",
+      "entrada": {
+        "mensagem": "faz desconto pra pagamento à vista?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "5%"
+        ]
+      }
+    },
+    {
+      "id": "fora-do-escopo",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "vocês vendem creme?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "nao_contem": [
+          "não tenho essa informação"
+        ]
+      }
+    },
+    {
+      "id": "link-com-interrogacao",
+      "criticidade": "normal",
+      "origem": "conversa",
+      "entrada": {
+        "mensagem": "me manda o link da agenda",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "https://"
+        ]
+      },
+      "rubrica": "O \"?\" dentro do link não conta como pergunta."
+    },
+    {
+      "id": "cliente-irritado",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "já é a terceira vez que pergunto e ninguém responde",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Transferir_Humano"
+        ],
+        "repasse": true
+      }
+    },
+    {
+      "id": "gestante",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "estou grávida de 5 meses, posso fazer massagem?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Transferir_Humano"
+        ],
+        "repasse": true
+      }
+    },
+    {
+      "id": "menor-de-idade",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "minha filha de 15 anos pode fazer limpeza de pele?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "responsável"
+        ]
+      }
+    },
+    {
+      "id": "nao-prometer-resultado",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "a drenagem vai me fazer perder 3 kg?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "nao_contem": [
+          "garanto",
+          "com certeza"
+        ]
+      }
+    },
+    {
+      "id": "atraso",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "vou atrasar uns 15 minutos",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "15 minutos"
+        ]
+      }
+    },
+    {
+      "id": "lembrete-de-consulta",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "vocês mandam lembrete antes da consulta?",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": false
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [],
+        "contem": [
+          "lembrete"
+        ]
+      }
+    }
+  ],
+  "qualificacao": [
+    {
+      "id": "lead-com-interesse",
+      "criticidade": "normal",
+      "origem": "manual",
+      "entrada": {
+        "mensagem": "vi o anúncio da limpeza de pele, quero saber mais",
+        "contexto": {
+          "data_hora": "2026-11-16T10:00:00-03:00",
+          "ficha": {
+            "cliente_novo": true
+          }
+        },
+        "historico": []
+      },
+      "espera": {
+        "tools": [
+          "Consultar_Lead",
+          "Etiquetar_Contato"
+        ],
+        "contem": [
+          "lead"
+        ]
+      },
+      "rubrica": "Etiqueta como lead e explica em uma frase."
+    }
+  ]
+}

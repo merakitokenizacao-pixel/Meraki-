@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{ "type": "command", "command": "meraki contexto --projeto crm-exemplo" }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__.*__(apply_migration|execute_sql)",
+        "hooks": [{ "type": "command", "command": "meraki gate --projeto crm-exemplo --modo autonomo" }]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [{ "type": "command", "command": "meraki gate-arquivos --protegido .meraki/" }]
+      }
+    ]
+  }
+}

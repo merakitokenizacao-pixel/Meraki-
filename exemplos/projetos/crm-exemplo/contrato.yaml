@@ -1,0 +1,105 @@
+# Contrato de estrutura do crm-exemplo (v1).
+# Publique com: meraki contrato publicar --projeto crm-exemplo --arquivo exemplos/projetos/crm-exemplo/contrato.yaml --motivo "..."
+# tags_contato fica de fora de propósito: é a dívida que o v0 encontrou (repete a primitiva etiqueta).
+projeto: crm-exemplo
+versao: 1
+escopo:
+  schemas: [public]
+  ignorar: []
+convencoes:
+  colunas_genericas: [id, tenant_id, criado_em, atualizado_em]
+  parametro_de_escopo: p_tenant
+  validadores_de_escopo: [tenant_do_contexto, tenant_valido]
+consumidores:
+  n8n_tags: [crm-exemplo]
+  credenciais:
+    - n8n:credencial:cred-crm-pg
+    - n8n:credencial:cred-crm-api
+    - n8n:credencial:cred-crm-openai
+  papeis_do_banco: [app_painel, app_n8n]
+primitivas:
+  etiqueta:
+    descricao: Classificação de contatos por tenant. Toda marcação de contato passa por aqui.
+    dona: public.etiquetas
+    vinculo: public.contato_etiquetas
+    escritores: [fn:public.etiqueta_aplicar, fn:public.etiqueta_remover]
+  mensagem_saida:
+    descricao: Toda mensagem enviada a um contato, de qualquer canal.
+    dona: public.envios
+    escritores: [fn:public.envio_registrar]
+objetos:
+  public.tenants: { papel: tenancy }
+  public.membros_tenant: { papel: tenancy }
+  public.contatos: { papel: entidade, nota: "A coluna etiquetas (text[]) é legado; use a primitiva etiqueta." }
+  public.campanhas: { papel: entidade, nota: Campanha segmentada por etiqueta. }
+  public.execucoes: { papel: log, nota: Log das execuções do n8n. }
+  public.horarios_padrao: { papel: entidade }
+  public.bloqueios: { papel: entidade }
+  public.tags_contato: { declarado: false }
+  public.v_resumo_envios: { papel: relatorio }
+  public.v_contatos_ativos: { papel: relatorio }
+  public.servicos: { papel: entidade, nota: Tratamentos de cada tenant, com duração e preço. }
+  public.agendamentos: { papel: entidade }
+  public.mensagens: { papel: entidade, nota: "Conversa do WhatsApp: cliente, IA e equipe. O agente de atendimento é medido por ela." }
+  public.pausas: { papel: entidade, nota: "Repasse para a equipe: enquanto aberta, a IA não responde o contato." }
+  public.n8n_chat_historico: { papel: log, nota: Memória do agente de atendimento (Postgres Chat Memory do n8n). }
+  fn:public.tenant_do_contexto: { papel: validador }
+  fn:public.tenant_valido: { papel: validador }
+  fn:public.contatos_exportar: { papel: api }
+  fn:public.limpar_execucoes: { papel: manutencao }
+  fn:public.relatorio_envios: { papel: relatorio }
+  fn:public.tocar_atualizado_em: { papel: gatilho }
+  fn:public.horarios_livres: { papel: api }
+  fn:public.agendamento_criar: { papel: api }
+  fn:public.agendamento_cancelar: { papel: api }
+  fn:public.repasse_registrar: { papel: api }
+# Contrato de comportamento dos agentes de IA (fase 2): onde está a conversa, o que conta como repasse e
+# conversão, a política das respostas e as metas. O motor gera o SQL de produção daqui (só agregados saem).
+agentes:
+  atendimento:
+    workflow: crm-04
+    node: Atendente
+    escopo: { coluna: tenant_id, valor: "11111111-1111-4111-8111-111111111111" }
+    conversas:
+      tabela: public.mensagens
+      contato: contato_id
+      texto: conteudo
+      momento: criado_em
+      autor: { coluna: origem, agente: ia }
+    eventos:
+      repasse: { tabela: public.pausas, contato: contato_id, momento: criado_em }
+      conversao: { tabela: public.agendamentos, contato: contato_id, momento: criado_em, janela_dias: 7 }
+    politicas:
+      proibidas: [fechou, garanto, promoção imperdível]
+      max_caracteres: 600
+      max_perguntas: 1
+    ensaio: { parametro: p_ensaio }
+    metas:
+      aprovacao_minima: 0.9
+      queda_maxima_pts: 5
+      repasse_maximo: 0.25
+      latencia_p95_ms: 8000
+  qualificacao:
+    workflow: crm-05
+    node: Qualificador
+    metas:
+      aprovacao_minima: 0.85
+regras:
+  ligar: [pacote:universal, pacote:splinter, pacote:estrutura, pacote:cruzada, pacote:n8n, pacote:repo, pacote:agente, pacote:avaliacao, pacote:producao]
+  desligar: []
+  ajustar:
+    E03: { limiar: 0.5, minimo_colunas: 3 }
+    E06: { dias: 30, minimo_linhas: 50 }
+excecoes:
+  - regra: E03
+    objetos: [public.horarios_padrao, public.bloqueios]
+    motivo: Grade semanal e bloqueio pontual têm colunas parecidas, mas são conceitos diferentes.
+    ate: "2027-03-01"
+  - regra: E03
+    objetos: [public.agendamentos, public.envios]
+    motivo: Agendamento e envio de mensagem só dividem contato e status; são conceitos diferentes.
+    ate: "2027-05-01"
+  - regra: U08
+    objetos: [public.n8n_chat_historico]
+    motivo: Memória do agente. RLS ligada sem policy de propósito, só o papel do n8n (bypassrls) lê e grava.
+    ate: "2027-05-01"

@@ -1,0 +1,69 @@
+{
+  "id": "crm-01",
+  "name": "Disparo de campanha",
+  "active": true,
+  "isArchived": false,
+  "versionId": "b1f0c7a2-0001-4000-8000-000000000001",
+  "activeVersionId": "b1f0c7a2-0001-4000-8000-000000000001",
+  "updatedAt": "2026-10-28T13:05:00.000Z",
+  "tags": [{ "id": "t-crm", "name": "crm-exemplo" }],
+  "settings": { "executionOrder": "v1", "errorWorkflow": "crm-09" },
+  "nodes": [
+    {
+      "id": "6f1c0001-0000-4000-8000-000000000001",
+      "name": "A cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } }
+    },
+    {
+      "id": "6f1c0001-0000-4000-8000-000000000002",
+      "name": "Buscar contatos da campanha",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=select c.id, c.nome, c.email, c.etiquetas from public.contatos c join public.contato_etiquetas ce on ce.contato_id = c.id where ce.etiqueta_id = '{{ $json.etiqueta_id }}' and c.tenant_id = '{{ $json.tenant_id }}'"
+      },
+      "credentials": { "postgres": { "id": "cred-crm-pg", "name": "CRM · Postgres (app_n8n)" } }
+    },
+    {
+      "id": "6f1c0001-0000-4000-8000-000000000003",
+      "name": "Registrar envio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://crm-exemplo.supabase.co/rest/v1/rpc/envio_registrar",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_tenant\": \"{{ $('Buscar contatos da campanha').item.json.tenant_id }}\", \"p_contato\": \"{{ $json.id }}\", \"p_canal\": \"whatsapp\", \"p_conteudo\": \"{{ $json.mensagem }}\" }"
+      },
+      "credentials": { "supabaseApi": { "id": "cred-crm-api", "name": "CRM · Supabase API" } }
+    },
+    {
+      "id": "6f1c0001-0000-4000-8000-000000000004",
+      "name": "Registrar execução",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [660, 0],
+      "parameters": {
+        "operation": "insert",
+        "schema": { "__rl": true, "mode": "list", "value": "public" },
+        "table": { "__rl": true, "mode": "list", "value": "execucoes" },
+        "columns": { "mappingMode": "defineBelow", "value": { "workflow": "Disparo de campanha", "status": "ok" } }
+      },
+      "credentials": { "postgres": { "id": "cred-crm-pg", "name": "CRM · Postgres (app_n8n)" } }
+    }
+  ],
+  "connections": {
+    "A cada hora": { "main": [[{ "node": "Buscar contatos da campanha", "type": "main", "index": 0 }]] },
+    "Buscar contatos da campanha": { "main": [[{ "node": "Registrar envio", "type": "main", "index": 0 }]] },
+    "Registrar envio": { "main": [[{ "node": "Registrar execução", "type": "main", "index": 0 }]] }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "ag-09",
+  "name": "Alerta da agenda",
+  "active": true,
+  "isArchived": false,
+  "versionId": "c2a1d3b4-0009-4000-8000-000000000001",
+  "activeVersionId": "c2a1d3b4-0009-4000-8000-000000000001",
+  "updatedAt": "2026-08-14T08:00:00.000Z",
+  "tags": [{ "id": "t-agenda", "name": "agenda-exemplo" }],
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "7a2b0009-0000-4000-8000-000000000001",
+      "name": "Falha em workflow",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "7a2b0009-0000-4000-8000-000000000002",
+      "name": "Avisar recepção",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "parameters": { "method": "POST", "url": "https://alertas.exemplo.test/agenda" }
+    }
+  ],
+  "connections": {
+    "Falha em workflow": { "main": [[{ "node": "Avisar recepção", "type": "main", "index": 0 }]] }
+  }
+}

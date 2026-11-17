@@ -1,0 +1,30 @@
+{
+  "name": "@meraki/motor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Motor de estrutura do Meraki: coletores, normalizador, diff, regras, gate e CLI meraki.",
+  "bin": {
+    "meraki": "bin/meraki.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "meraki": "node bin/meraki.mjs",
+    "tipos": "node bin/meraki.mjs tipos --saida ../web/src/lib/plataforma/tipos.gen.ts",
+    "checar-tipos": "tsc --noEmit"
+  },
+  "dependencies": {
+    "libpg-query": "^18.2.4",
+    "pg": "^8.23.1",
+    "ts-morph": "^28.0.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  }
+}

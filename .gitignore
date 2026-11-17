@@ -1,0 +1,39 @@
+# Dependências e saídas de build
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Ambiente local de desenvolvimento: banco (pgdata), logs e n8n local. Nunca sobe.
+.dev/
+
+# Segredos: as chaves das fontes ficam no Vault, nunca em arquivo
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Planilhas e exportações: podem ter dado de cliente
+*.xlsx
+*.xls
+*.csv
+
+# Documentos de referência (o repositório é público)
+*.pdf
+
+# Logs
+*.log
+
+# Sistema e editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code: configurações pessoais de cada máquina
+.claude/settings.local.json

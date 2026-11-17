@@ -1,0 +1,502 @@
+{
+  "id": "crm-05",
+  "name": "Qualificação de leads",
+  "active": true,
+  "isArchived": false,
+  "versionId": "b1f0c7a2-0005-4000-8000-0000000000a1",
+  "activeVersionId": "b1f0c7a2-0005-4000-8000-0000000000a1",
+  "updatedAt": "2026-10-30T12:00:00.000Z",
+  "tags": [
+    {
+      "id": "t-crm",
+      "name": "crm-exemplo"
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "crm-09"
+  },
+  "nodes": [
+    {
+      "id": "6f1c0005-0001-4000-8000-000000000000",
+      "name": "Novo lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm/lead",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "6f1c0005-0002-4000-8000-000000000000",
+      "name": "Qualificador",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Novo lead').item.json.body.mensagem }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=Você classifica leads novos da Clínica Horizonte pela primeira mensagem.\n\nUse `Consultar_Lead` para ver o cadastro do contato e `Etiquetar_Contato` para aplicar uma das etiquetas: lead, cliente ou vip.\nResponda só com a etiqueta aplicada e o motivo em uma frase.",
+          "maxIterations": 4
+        }
+      }
+    },
+    {
+      "id": "6f1c0005-0003-4000-8000-000000000000",
+      "name": "OpenAI principal",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "cred-crm-openai",
+          "name": "CRM · OpenAI"
+        }
+      }
+    },
+    {
+      "id": "6f1c0005-0004-4000-8000-000000000000",
+      "name": "OpenAI reserva",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-nano"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "cred-crm-openai",
+          "name": "CRM · OpenAI"
+        }
+      }
+    },
+    {
+      "id": "6f1c0005-0005-4000-8000-000000000000",
+      "name": "Consultar_Lead",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Traz o cadastro do contato que mandou a mensagem.",
+        "operation": "executeQuery",
+        "query": "=select nome, criado_em from public.contatos where id = '{{ $('Novo lead').item.json.body.contato_id }}'"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c0005-0006-4000-8000-000000000000",
+      "name": "Etiquetar_Contato",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "toolDescription": "Aplica uma etiqueta ao contato.",
+        "method": "POST",
+        "url": "https://crm-exemplo.supabase.co/rest/v1/rpc/etiqueta_aplicar",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_tenant\": \"{{ $('Novo lead').item.json.body.tenant_id }}\", \"p_contato\": \"{{ $('Novo lead').item.json.body.contato_id }}\", \"p_etiqueta\": \"{{ $fromAI('etiqueta', 'Id da etiqueta escolhida', 'string') }}\" }"
+      },
+      "credentials": {
+        "supabaseApi": {
+          "id": "cred-crm-api",
+          "name": "CRM · Supabase API"
+        }
+      }
+    },
+    {
+      "id": "6f1c0005-0007-4000-8000-000000000000",
+      "name": "Registrar execução",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "execucoes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflow": "Qualificação de leads",
+            "status": "ok"
+          }
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cred-crm-pg",
+          "name": "CRM · Postgres (app_n8n)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Novo lead": {
+      "main": [
+        [
+          {
+            "node": "Qualificador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualificador": {
+      "main": [
+        [
+          {
+            "node": "Registrar execução",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI principal": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Qualificador",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI reserva": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Qualificador",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Consultar_Lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "Qualificador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Etiquetar_Contato": {
+      "ai_tool": [
+        [
+          {
+            "node": "Qualificador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "activeVersion": {
+    "versionId": "b1f0c7a2-0005-4000-8000-0000000000a1",
+    "nodes": [
+      {
+        "id": "6f1c0005-0001-4000-8000-000000000000",
+        "name": "Novo lead",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          220,
+          0
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "crm/lead",
+          "responseMode": "onReceived"
+        }
+      },
+      {
+        "id": "6f1c0005-0002-4000-8000-000000000000",
+        "name": "Qualificador",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2.2,
+        "position": [
+          440,
+          0
+        ],
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $('Novo lead').item.json.body.mensagem }}",
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "=Você classifica leads novos da Clínica Horizonte pela primeira mensagem.\n\nUse `Consultar_Lead` para ver o cadastro do contato e `Etiquetar_Contato` para aplicar uma das etiquetas: lead, cliente ou vip.\nResponda só com a etiqueta aplicada e o motivo em uma frase.",
+            "maxIterations": 4
+          }
+        }
+      },
+      {
+        "id": "6f1c0005-0003-4000-8000-000000000000",
+        "name": "OpenAI principal",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          660,
+          0
+        ],
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "options": {
+            "temperature": 0
+          }
+        },
+        "credentials": {
+          "openAiApi": {
+            "id": "cred-crm-openai",
+            "name": "CRM · OpenAI"
+          }
+        }
+      },
+      {
+        "id": "6f1c0005-0004-4000-8000-000000000000",
+        "name": "OpenAI reserva",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          880,
+          0
+        ],
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-nano"
+          },
+          "options": {
+            "temperature": 0
+          }
+        },
+        "credentials": {
+          "openAiApi": {
+            "id": "cred-crm-openai",
+            "name": "CRM · OpenAI"
+          }
+        }
+      },
+      {
+        "id": "6f1c0005-0005-4000-8000-000000000000",
+        "name": "Consultar_Lead",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          1100,
+          0
+        ],
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Traz o cadastro do contato que mandou a mensagem.",
+          "operation": "executeQuery",
+          "query": "=select nome, criado_em from public.contatos where id = '{{ $('Novo lead').item.json.body.contato_id }}'"
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      },
+      {
+        "id": "6f1c0005-0006-4000-8000-000000000000",
+        "name": "Etiquetar_Contato",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "typeVersion": 4.2,
+        "position": [
+          1320,
+          0
+        ],
+        "parameters": {
+          "toolDescription": "Aplica uma etiqueta ao contato.",
+          "method": "POST",
+          "url": "https://crm-exemplo.supabase.co/rest/v1/rpc/etiqueta_aplicar",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "supabaseApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"p_tenant\": \"{{ $('Novo lead').item.json.body.tenant_id }}\", \"p_contato\": \"{{ $('Novo lead').item.json.body.contato_id }}\", \"p_etiqueta\": \"{{ $fromAI('etiqueta', 'Id da etiqueta escolhida', 'string') }}\" }"
+        },
+        "credentials": {
+          "supabaseApi": {
+            "id": "cred-crm-api",
+            "name": "CRM · Supabase API"
+          }
+        }
+      },
+      {
+        "id": "6f1c0005-0007-4000-8000-000000000000",
+        "name": "Registrar execução",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.6,
+        "position": [
+          1540,
+          0
+        ],
+        "parameters": {
+          "operation": "insert",
+          "schema": {
+            "__rl": true,
+            "mode": "list",
+            "value": "public"
+          },
+          "table": {
+            "__rl": true,
+            "mode": "list",
+            "value": "execucoes"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "workflow": "Qualificação de leads",
+              "status": "ok"
+            }
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "cred-crm-pg",
+            "name": "CRM · Postgres (app_n8n)"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Novo lead": {
+        "main": [
+          [
+            {
+              "node": "Qualificador",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Qualificador": {
+        "main": [
+          [
+            {
+              "node": "Registrar execução",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI principal": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Qualificador",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI reserva": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Qualificador",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Consultar_Lead": {
+        "ai_tool": [
+          [
+            {
+              "node": "Qualificador",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Etiquetar_Contato": {
+        "ai_tool": [
+          [
+            {
+              "node": "Qualificador",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

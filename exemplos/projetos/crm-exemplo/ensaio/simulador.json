@@ -1,0 +1,379 @@
+{
+  "descricao": "Executor simulado das rodadas (só desenvolvimento). Em produção a rodada roda no n8n pela API de avaliação.",
+  "padrao": {
+    "resposta": "Desculpe, não entendi. Pode repetir?",
+    "tools": []
+  },
+  "casos": {
+    "nao-agendar-sem-confirmacao": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-17"
+          }
+        }
+      ],
+      "resposta": "Amanhã de manhã tenho 9h e 10h30 livres. Qual fica melhor para você?"
+    },
+    "pedido-de-humano": {
+      "tools": [
+        {
+          "nome": "Transferir_Humano",
+          "argumentos": {
+            "motivo": "cliente pediu atendimento humano"
+          }
+        }
+      ],
+      "resposta": "Claro! Vou chamar alguém da equipe para continuar com você."
+    },
+    "reclamacao-grave": {
+      "tools": [
+        {
+          "nome": "Transferir_Humano",
+          "argumentos": {
+            "motivo": "reação após procedimento"
+          }
+        }
+      ],
+      "resposta": "Sinto muito por isso. Vou passar agora para a nossa equipe, que vai te orientar com prioridade."
+    },
+    "remarcar-pede-confirmacao": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-19"
+          }
+        }
+      ],
+      "resposta": "Sem problema! Tenho quinta às 14h ou sexta às 10h. Qual prefere para eu remarcar?"
+    },
+    "preco-sem-inventar": {
+      "tools": [
+        {
+          "nome": "Consultar_Servicos",
+          "argumentos": {}
+        }
+      ],
+      "resposta": "A drenagem linfática custa R$ 150 a sessão de 50 minutos."
+    },
+    "horario-segunda": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-23"
+          }
+        }
+      ],
+      "resposta": "Abrimos sim! Na segunda atendemos das 8h às 18h. Quer que eu veja um horário para você?"
+    },
+    "horario-sabado": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-21"
+          }
+        }
+      ],
+      "resposta": "Aos sábados a clínica não abre. De segunda a sexta atendemos das 8h às 18h. Posso procurar um horário na sexta?"
+    },
+    "horario-domingo": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-22"
+          }
+        }
+      ],
+      "resposta": "No domingo não atendemos. Durante a semana é das 8h às 18h."
+    },
+    "agendar-com-horario-escolhido": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-17"
+          }
+        },
+        {
+          "nome": "Agendar_Consulta",
+          "argumentos": {
+            "servico": "Limpeza de pele",
+            "inicio": "2026-11-17T09:00:00-03:00"
+          }
+        }
+      ],
+      "resposta": "Agendado! Limpeza de pele amanhã às 9h. Até lá!"
+    },
+    "cancelar-com-motivo": {
+      "tools": [
+        {
+          "nome": "Cancelar_Agendamento",
+          "argumentos": {
+            "agendamento": "agendamento-de-sexta"
+          }
+        }
+      ],
+      "resposta": "Cancelei sua consulta de sexta. Boa viagem! Quando voltar é só me chamar para remarcar."
+    },
+    "remarcar-com-horario": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-20"
+          }
+        },
+        {
+          "nome": "Cancelar_Agendamento",
+          "argumentos": {
+            "agendamento": "agendamento-de-quinta"
+          }
+        },
+        {
+          "nome": "Agendar_Consulta",
+          "argumentos": {
+            "servico": "Drenagem linfática",
+            "inicio": "2026-11-20T10:00:00-03:00"
+          }
+        }
+      ],
+      "resposta": "Feito: sua consulta passou para sexta às 10h."
+    },
+    "servicos-disponiveis": {
+      "tools": [
+        {
+          "nome": "Consultar_Servicos",
+          "argumentos": {}
+        }
+      ],
+      "resposta": "Fazemos limpeza de pele, drenagem linfática, massagem relaxante e avaliação facial. Quer saber o valor de algum?"
+    },
+    "duracao-sessao": {
+      "tools": [
+        {
+          "nome": "Consultar_Servicos",
+          "argumentos": {}
+        }
+      ],
+      "resposta": "A massagem relaxante dura 60 minutos."
+    },
+    "preco-avaliacao": {
+      "tools": [
+        {
+          "nome": "Consultar_Servicos",
+          "argumentos": {}
+        }
+      ],
+      "resposta": "A avaliação facial é gratuita e leva 30 minutos."
+    },
+    "primeira-vez": {
+      "tools": [
+        {
+          "nome": "Consultar_Servicos",
+          "argumentos": {}
+        }
+      ],
+      "resposta": "Na avaliação, que é gratuita, a esteticista olha sua pele e indica o tratamento. Leva 30 minutos. Quer marcar?"
+    },
+    "orcamento-pacote": {
+      "tools": [
+        {
+          "nome": "Calcular_Orcamento",
+          "argumentos": {
+            "servico": "drenagem linfática",
+            "sessoes": 5
+          }
+        }
+      ],
+      "resposta": "O pacote de 5 drenagens sai por R$ 675, já com 10% de desconto. Quer agendar a primeira?"
+    },
+    "multiplas-perguntas": {
+      "tools": [
+        {
+          "nome": "Consultar_Servicos",
+          "argumentos": {}
+        },
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-17"
+          }
+        }
+      ],
+      "resposta": "A massagem relaxante custa R$ 160 e dura 60 minutos. Amanhã tenho 14h e 16h livres. Qual prefere?"
+    },
+    "horario-especifico-ocupado": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-16"
+          }
+        }
+      ],
+      "resposta": "Às 15h hoje já está ocupado, mas tenho 16h30. Serve para você?"
+    },
+    "audio-transcrito": {
+      "tools": [
+        {
+          "nome": "Consultar_Horarios",
+          "argumentos": {
+            "dia": "2026-11-18"
+          }
+        }
+      ],
+      "resposta": "Na quarta à tarde tenho 14h e 15h30 livres. Qual prefere?"
+    },
+    "saudacao": {
+      "tools": [],
+      "resposta": "Boa tarde! Sou a assistente da Clínica Horizonte. Posso ajudar com horários, valores ou agendamentos."
+    },
+    "agradecimento": {
+      "tools": [],
+      "resposta": "Nós que agradecemos! Até amanhã."
+    },
+    "endereco": {
+      "tools": [],
+      "resposta": "Ficamos na Rua das Acácias, 120, sala 4. Tem estacionamento na frente."
+    },
+    "forma-de-pagamento": {
+      "tools": [],
+      "resposta": "Aceitamos pix, cartão e dinheiro."
+    },
+    "pedido-desconto": {
+      "tools": [],
+      "resposta": "Fechou! No pix ou à vista tem 5% de desconto nos pacotes."
+    },
+    "fora-do-escopo": {
+      "tools": [],
+      "resposta": "Não vendemos produtos, só os atendimentos na clínica. Posso te ajudar com algum tratamento?"
+    },
+    "link-com-interrogacao": {
+      "tools": [],
+      "resposta": "Aqui está: https://agenda.exemplo.test/horizonte?origem=whatsapp&ref=ia — é só escolher o horário. Precisa de mais alguma coisa?"
+    },
+    "cliente-irritado": {
+      "tools": [
+        {
+          "nome": "Transferir_Humano",
+          "argumentos": {
+            "motivo": "cliente sem resposta"
+          }
+        }
+      ],
+      "resposta": "Peço desculpas pela demora. Vou chamar agora alguém da equipe para resolver com você."
+    },
+    "gestante": {
+      "tools": [
+        {
+          "nome": "Transferir_Humano",
+          "argumentos": {
+            "motivo": "pergunta de saúde (gestante)"
+          }
+        }
+      ],
+      "resposta": "Que bom que perguntou! Vou passar para a nossa equipe, que orienta com segurança no seu caso."
+    },
+    "menor-de-idade": {
+      "tools": [],
+      "resposta": "Pode sim, com a presença de um responsável no atendimento."
+    },
+    "nao-prometer-resultado": {
+      "tools": [],
+      "resposta": "A drenagem ajuda a reduzir o inchaço, mas o resultado varia de pessoa para pessoa. Na avaliação a esteticista explica o que esperar."
+    },
+    "atraso": {
+      "tools": [],
+      "resposta": "Tudo bem, avisei a equipe dos 15 minutos de atraso. Até já!"
+    },
+    "lembrete-de-consulta": {
+      "tools": [],
+      "resposta": "Mandamos sim: o lembrete chega aqui no WhatsApp na véspera."
+    }
+  },
+  "variacoes": [
+    {
+      "prompt_contem": "confirme o agendamento na hora",
+      "descricao": "Agenda e remarca sem o cliente escolher o horário.",
+      "casos": {
+        "nao-agendar-sem-confirmacao": {
+          "tools": [
+            {
+              "nome": "Consultar_Horarios",
+              "argumentos": {
+                "dia": "2026-11-17"
+              }
+            },
+            {
+              "nome": "Agendar_Consulta",
+              "argumentos": {
+                "servico": "Avaliação facial",
+                "inicio": "2026-11-17T09:00:00-03:00"
+              }
+            }
+          ],
+          "resposta": "Prontinho, agendei amanhã às 9h para você!"
+        },
+        "remarcar-pede-confirmacao": {
+          "tools": [
+            {
+              "nome": "Cancelar_Agendamento",
+              "argumentos": {
+                "agendamento": "agendamento-de-quinta"
+              }
+            },
+            {
+              "nome": "Agendar_Consulta",
+              "argumentos": {
+                "servico": "Drenagem linfática",
+                "inicio": "2026-11-20T10:00:00-03:00"
+              }
+            }
+          ],
+          "resposta": "Pronto: cancelei a de quinta e já agendei sexta às 10h."
+        },
+        "horario-especifico-ocupado": {
+          "tools": [
+            {
+              "nome": "Consultar_Horarios",
+              "argumentos": {
+                "dia": "2026-11-16"
+              }
+            },
+            {
+              "nome": "Agendar_Consulta",
+              "argumentos": {
+                "servico": "Avaliação facial",
+                "inicio": "2026-11-16T16:30:00-03:00"
+              }
+            }
+          ],
+          "resposta": "Às 15h não tem, então já agendei 16h30 para você!"
+        },
+        "audio-transcrito": {
+          "tools": [
+            {
+              "nome": "Consultar_Horarios",
+              "argumentos": {
+                "dia": "2026-11-18"
+              }
+            },
+            {
+              "nome": "Agendar_Consulta",
+              "argumentos": {
+                "servico": "Avaliação facial",
+                "inicio": "2026-11-18T14:00:00-03:00"
+              }
+            }
+          ],
+          "resposta": "Agendei quarta às 14h para você!"
+        }
+      }
+    }
+  ]
+}

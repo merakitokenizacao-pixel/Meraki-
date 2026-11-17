@@ -1,0 +1,38 @@
+{
+  "id": "crm-09",
+  "name": "Alerta de falhas",
+  "active": true,
+  "isArchived": false,
+  "versionId": "b1f0c7a2-0009-4000-8000-000000000001",
+  "activeVersionId": "b1f0c7a2-0009-4000-8000-000000000001",
+  "updatedAt": "2026-08-02T09:00:00.000Z",
+  "tags": [{ "id": "t-crm", "name": "crm-exemplo" }],
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "6f1c0009-0000-4000-8000-000000000001",
+      "name": "Falha em workflow",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "6f1c0009-0000-4000-8000-000000000002",
+      "name": "Avisar equipe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://alertas.exemplo.test/crm",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"workflow\": \"{{ $json.workflow.name }}\", \"erro\": \"{{ $json.execution.error.message }}\" }"
+      }
+    }
+  ],
+  "connections": {
+    "Falha em workflow": { "main": [[{ "node": "Avisar equipe", "type": "main", "index": 0 }]] }
+  }
+}

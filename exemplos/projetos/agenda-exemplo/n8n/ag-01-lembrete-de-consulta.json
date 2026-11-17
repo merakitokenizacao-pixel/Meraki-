@@ -1,0 +1,48 @@
+{
+  "id": "ag-01",
+  "name": "Lembrete de consulta",
+  "active": true,
+  "isArchived": false,
+  "versionId": "c2a1d3b4-0001-4000-8000-000000000001",
+  "activeVersionId": "c2a1d3b4-0001-4000-8000-000000000001",
+  "updatedAt": "2026-10-03T18:45:00.000Z",
+  "tags": [{ "id": "t-agenda", "name": "agenda-exemplo" }],
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "7a2b0001-0000-4000-8000-000000000001",
+      "name": "A cada 30 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 30 }] } }
+    },
+    {
+      "id": "7a2b0001-0000-4000-8000-000000000002",
+      "name": "Próximas 24 horas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [220, 0],
+      "parameters": { "operation": "executeQuery", "query": "select a.id, a.inicio, a.cliente_id from public.proximos_agendamentos(24) a" },
+      "credentials": { "postgres": { "id": "cred-agenda-pg", "name": "Agenda · Postgres (app_n8n)" } }
+    },
+    {
+      "id": "7a2b0001-0000-4000-8000-000000000003",
+      "name": "Registrar lembrete",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [440, 0],
+      "parameters": {
+        "operation": "insert",
+        "schema": { "__rl": true, "mode": "list", "value": "public" },
+        "table": { "__rl": true, "mode": "list", "value": "lembretes" },
+        "columns": { "mappingMode": "defineBelow", "value": { "agendamento_id": "={{ $json.id }}", "canal": "sms" } }
+      },
+      "credentials": { "postgres": { "id": "cred-agenda-pg", "name": "Agenda · Postgres (app_n8n)" } }
+    }
+  ],
+  "connections": {
+    "A cada 30 minutos": { "main": [[{ "node": "Próximas 24 horas", "type": "main", "index": 0 }]] },
+    "Próximas 24 horas": { "main": [[{ "node": "Registrar lembrete", "type": "main", "index": 0 }]] }
+  }
+}
